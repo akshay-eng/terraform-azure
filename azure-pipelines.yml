@@ -1,0 +1,45 @@
+trigger:
+- main
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+  ARM_CLIENT_ID: $(AZURE_CLIENT_ID)
+  ARM_CLIENT_SECRET: $(AZURE_CLIENT_SECRET)
+  ARM_SUBSCRIPTION_ID: $(SUBSCRIPTION_ID)
+  ARM_TENANT_ID: $(AZURE_TENANT_ID)
+
+steps:
+- checkout: self
+
+- task: TerraformInstaller@1
+  displayName: 'Install Terraform'
+  inputs:
+    terraformVersion: 'latest'
+
+- script: terraform init
+  displayName: 'Terraform Init'
+
+- script: |
+    terraform plan \
+      -var rg_name=$(ResourceGroupName) \
+      -var rg_location=$(Location) \
+      -var vnetname=$(VirtualNetworkName) \
+      -var vm_name=$(VMName) \
+      -var vm_size=$(VMSize) \
+      -var admin_username=$(AdminUsername) \
+      -var admin_password=$(AdminPassword)
+  displayName: 'Terraform Plan'
+
+- script: |
+    terraform $(Action) \
+      -var rg_name=$(ResourceGroupName) \
+      -var rg_location=$(Location) \
+      -var vnetname=$(VirtualNetworkName) \
+      -var vm_name=$(VMName) \
+      -var vm_size=$(VMSize) \
+      -var admin_username=$(AdminUsername) \
+      -var admin_password=$(AdminPassword) \
+      -auto-approve
+  displayName: 'Terraform Apply/Destroy'
