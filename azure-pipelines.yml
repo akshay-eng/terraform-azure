@@ -10,6 +10,32 @@ variables:
   ARM_SUBSCRIPTION_ID: $(SUBSCRIPTION_ID)
   ARM_TENANT_ID: $(AZURE_TENANT_ID)
 
+parameters:
+  - name: ResourceGroupName
+    type: string
+    default: "my-default-rg"
+  - name: Location
+    type: string
+    default: "eastus"
+  - name: VirtualNetworkName
+    type: string
+    default: "my-default-vnet"
+  - name: VMName
+    type: string
+    default: "my-default-vm"
+  - name: VMSize
+    type: string
+    default: "Standard_B2s"
+  - name: AdminUsername
+    type: string
+    default: "adminuser"
+  - name: AdminPassword
+    type: string
+    default: "P@ssword123"  # ❗ Change this for security reasons
+  - name: Action
+    type: string
+    default: "apply"
+
 steps:
 - checkout: self
 
@@ -18,28 +44,34 @@ steps:
   inputs:
     terraformVersion: 'latest'
 
-- script: terraform init
+- script: |
+    export ARM_CLIENT_ID=$(AZURE_CLIENT_ID)
+    export ARM_CLIENT_SECRET=$(AZURE_CLIENT_SECRET)
+    export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
+    export ARM_TENANT_ID=$(AZURE_TENANT_ID)
+
+    terraform init
   displayName: 'Terraform Init'
 
 - script: |
     terraform plan \
-      -var rg_name=$(ResourceGroupName) \
-      -var rg_location=$(Location) \
-      -var vnetname=$(VirtualNetworkName) \
-      -var vm_name=$(VMName) \
-      -var vm_size=$(VMSize) \
-      -var admin_username=$(AdminUsername) \
-      -var admin_password=$(AdminPassword)
+      -var rg_name=${{ parameters.ResourceGroupName }} \
+      -var rg_location=${{ parameters.Location }} \
+      -var vnetname=${{ parameters.VirtualNetworkName }} \
+      -var vm_name=${{ parameters.VMName }} \
+      -var vm_size=${{ parameters.VMSize }} \
+      -var admin_username=${{ parameters.AdminUsername }} \
+      -var admin_password=${{ parameters.AdminPassword }}
   displayName: 'Terraform Plan'
 
 - script: |
-    terraform $(Action) \
-      -var rg_name=$(ResourceGroupName) \
-      -var rg_location=$(Location) \
-      -var vnetname=$(VirtualNetworkName) \
-      -var vm_name=$(VMName) \
-      -var vm_size=$(VMSize) \
-      -var admin_username=$(AdminUsername) \
-      -var admin_password=$(AdminPassword) \
+    terraform ${{ parameters.Action }} \
+      -var rg_name=${{ parameters.ResourceGroupName }} \
+      -var rg_location=${{ parameters.Location }} \
+      -var vnetname=${{ parameters.VirtualNetworkName }} \
+      -var vm_name=${{ parameters.VMName }} \
+      -var vm_size=${{ parameters.VMSize }} \
+      -var admin_username=${{ parameters.AdminUsername }} \
+      -var admin_password=${{ parameters.AdminPassword }} \
       -auto-approve
   displayName: 'Terraform Apply/Destroy'
