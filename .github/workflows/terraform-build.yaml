@@ -1,0 +1,84 @@
+name: Terraform Deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      ResourceGroupName:
+        description: "Resource Group Name"
+        required: true
+        type: string
+      VirtualNetworkName:
+        description: "Virtual Network Name"
+        required: true
+        type: string
+      Location:
+        description: "Location"
+        required: true
+        type: string
+      vm_name:
+        description: "Virtual Machine Name"
+        required: true
+        type: string
+      vm_size:
+        description: "VM Size"
+        required: true
+        type: string
+        default: "Standard_B1s"
+      admin_username:
+        description: "Admin Username"
+        required: true
+        type: string
+      admin_password:
+        description: "Admin Password"
+        required: true
+        type: string
+      action:
+        description: "Action to perform like apply or destroy"
+        required: true
+        type: string
+        default: "apply"
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    name: 'Terraform Deployment'
+    env:
+      ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.SUBSCRIPTION_ID }}
+      ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+    steps:
+      - name: 'Checkout Repository'
+        uses: actions/checkout@v3
+
+      - name: 'Setup Terraform'
+        uses: hashicorp/setup-terraform@v3
+
+      - name: 'Terraform Init'
+        id: init
+        run: terraform init  
+
+      - name: 'Terraform Plan'
+        id: plan
+        run: |
+          terraform plan \
+            -var rg_name=${{ github.event.inputs.ResourceGroupName }} \
+            -var rg_location=${{ github.event.inputs.Location }} \
+            -var vnetname=${{ github.event.inputs.VirtualNetworkName }} \
+            -var vm_name=${{ github.event.inputs.vm_name }} \
+            -var vm_size=${{ github.event.inputs.vm_size }} \
+            -var admin_username=${{ github.event.inputs.admin_username }} \
+            -var admin_password=${{ github.event.inputs.admin_password }}
+
+      - name: 'Terraform Apply or Destroy'
+        id: apply
+        run: |
+          terraform ${{ github.event.inputs.action }} \
+            -var rg_name=${{ github.event.inputs.ResourceGroupName }} \
+            -var rg_location=${{ github.event.inputs.Location }} \
+            -var vnetname=${{ github.event.inputs.VirtualNetworkName }} \
+            -var vm_name=${{ github.event.inputs.vm_name }} \
+            -var vm_size=${{ github.event.inputs.vm_size }} \
+            -var admin_username=${{ github.event.inputs.admin_username }} \
+            -var admin_password=${{ github.event.inputs.admin_password }} \
+            -auto-approve
